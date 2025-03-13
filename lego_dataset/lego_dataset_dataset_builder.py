@@ -141,7 +141,9 @@ class LegoDataset(tfds.core.GeneratorBasedBuilder):
 
                 # assemble episode --> here we're assuming demos so we set reward to 1 at the end
                 episode = []
-                for i, step in enumerate(episode_h5.values()):
+                for i in range(len(episode_h5)):
+                    step = episode_h5[f'step_{i}']
+
                     episode.append({
                         'observation': {
                             'third_person_image': step['observation']['third_person_image'][()],

@@ -17,10 +17,10 @@ dataset_name = args.dataset_name
 print(f"Visualizing data from dataset: {dataset_name}")
 module = importlib.import_module(dataset_name)
 ds = tfds.load(dataset_name, split='train')
-ds = ds.shuffle(100)
+#ds = ds.shuffle(100)
 
 # visualize episodes
-for i, episode in enumerate(ds.clear(10)):
+for i, episode in enumerate(ds):
     third_person_image, wrist_image, = [], []
     for step in episode['steps']:
         third_person_image.append(step['observation']['third_person_image'].numpy())
