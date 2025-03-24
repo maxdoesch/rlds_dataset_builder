@@ -32,13 +32,13 @@ class LegoDataset(tfds.core.GeneratorBasedBuilder):
                         'third_person_image': tfds.features.Image(
                             shape=(180, 320, 3),
                             dtype=np.uint8,
-                            encoding_format='png',
+                            encoding_format='jpeg',
                             doc='Third person camera RGB observation.',
                         ),
                         'wrist_image': tfds.features.Image(
                             shape=(180, 320, 3),
                             dtype=np.uint8,
-                            encoding_format='png',
+                            encoding_format='jpeg',
                             doc='Wrist camera RGB observation.',
                         ),
                         'cartesian_position': tfds.features.Tensor(
@@ -164,7 +164,7 @@ class LegoDataset(tfds.core.GeneratorBasedBuilder):
                         },
                         'action': np.concatenate(
                             (step['action']['cartesian_position_delta'][()], 
-                            np.array([step['observation']['gripper_position'][()]])), dtype=np.float64
+                            gripper_position_array), dtype=np.float64
                         ),
                         'discount': 1.0,
                         'reward': float(i == (len(episode_h5) - 1)),
