@@ -144,7 +144,7 @@ class LegoDataset(tfds.core.GeneratorBasedBuilder):
                     step = episode_h5[f'step_{i}']
 
                     gripper_position = step['observation']['gripper_position'][()]
-                    gripper_position_binarized = 1 if gripper_position > 0.5 else 0
+                    gripper_position_binarized = 1 if gripper_position > 0.1 else 0
                     gripper_position_array = np.array([gripper_position_binarized], dtype=np.float64)
 
                     episode.append({
