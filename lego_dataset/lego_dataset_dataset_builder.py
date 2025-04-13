@@ -32,13 +32,13 @@ class LegoDataset(tfds.core.GeneratorBasedBuilder):
                         'third_person_image': tfds.features.Image(
                             shape=(180, 320, 3),
                             dtype=np.uint8,
-                            encoding_format='png',
+                            encoding_format='jpeg',
                             doc='Third person camera RGB observation.',
                         ),
                         'wrist_image': tfds.features.Image(
                             shape=(180, 320, 3),
                             dtype=np.uint8,
-                            encoding_format='png',
+                            encoding_format='jpeg',
                             doc='Wrist camera RGB observation.',
                         ),
                         'cartesian_position': tfds.features.Tensor(
@@ -51,10 +51,20 @@ class LegoDataset(tfds.core.GeneratorBasedBuilder):
                             dtype=np.float64,
                             doc='Gripper position statae',
                         ),
+                        'cartesian_proprio': tfds.features.Tensor(
+                            shape=(7,),
+                            dtype=np.float64,
+                            doc='Robot Cartesian state + gripper position',
+                        ),
                         'joint_position': tfds.features.Tensor(
                             shape=(7,),
                             dtype=np.float64,
                             doc='Joint position state'
+                        ),
+                        'joint_proprio': tfds.features.Tensor(
+                            shape=(8,),
+                            dtype=np.float64,
+                            doc='Joint position state + gripper position'
                         )
                     }),
                     'action_dict': tfds.features.FeaturesDict({
@@ -144,34 +154,48 @@ class LegoDataset(tfds.core.GeneratorBasedBuilder):
                     step = episode_h5[f'step_{i}']
 
                     gripper_position = step['observation']['gripper_position'][()]
-                    gripper_position_binarized = 1 if gripper_position > 0.1 else 0
-                    gripper_position_array = np.array([gripper_position_binarized], dtype=np.float64)
+                    gripper_position_array = np.array([gripper_position], dtype=np.float64)
+
+                    if 'gripper' in step['action']:
+                        gripper_position_binarized = step['action']['gripper'][()]
+                        gripper_position_binarized_array = np.array([gripper_position_binarized], dtype=np.float64)
+                    else:
+                        gripper_position_binarized = 1 if gripper_position > 0.1 else 0
+                        gripper_position_binarized_array = np.array([gripper_position_binarized], dtype=np.float64)
 
                     episode.append({
                         'observation': {
                             'third_person_image': step['observation']['third_person_image'][()],
                             'wrist_image': step['observation']['wrist_image'][()],
                             'cartesian_position': step['observation']['cartesian_position'][()],
+                            'cartesian_proprio': np.concatenate(
+                                (step['observation']['cartesian_position'][()],
+                                gripper_position_array), dtype=np.float64
+                            ),
                             'gripper_position': gripper_position_array,
                             'joint_position': step['observation']['joint_position'][()],
+                            'joint_proprio': np.concatenate(
+                                (step['observation']['joint_position'][()],
+                                gripper_position_array), dtype=np.float64
+                            ),
                         },
                         'action_dict': {
                             'cartesian_position': step['observation']['cartesian_position'][()],
                             'cartesian_delta': step['action']['cartesian_position_delta'][()],
-                            'gripper_position': gripper_position_array,
+                            'gripper_position': gripper_position_binarized_array,
                             'joint_position': step['observation']['joint_position'][()],
                             'joint_delta': step['action']['joint_position_delta'][()],
                         },
                         'action': np.concatenate(
                             (step['action']['cartesian_position_delta'][()], 
-                            np.array([step['observation']['gripper_position'][()]])), dtype=np.float64
+                            gripper_position_binarized_array), dtype=np.float64
                         ),
                         'discount': 1.0,
                         'reward': float(i == (len(episode_h5) - 1)),
                         'is_first': i == 0,
                         'is_last': i == (len(episode_h5) - 1),
                         'is_terminal': i == (len(episode_h5) - 1),
-                        'language_instruction': step['instruction'][()],
+                        'language_instruction': step['instruction'][()].decode(),
                     })
 
             # create output data sample
